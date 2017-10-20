@@ -33,7 +33,8 @@ pit <- function(ens, obs) {
 
 calcpredwidth <- function(ens, CDFVals, quantiles)  if(anyNA(ens)) return(NA) else diff(approx(CDFVals, sort(ens), xout = quantiles)$y) ## auxiliary function for predwidth
 
-predwidth <- function(ens, quantiles, center = TRUE)  {
+predwidth <- function(ens, obs, quantiles = c(0.125,0.875), center = TRUE)  {
+  ## obs needed only for compatibility with veriApply function {easyVerification}
   R <- dim(ens)[2]
   CDFVals <- {1:R}/{R+1}
   if(center) {
