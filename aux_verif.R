@@ -45,3 +45,9 @@ predwidth <- function(ens, obs, quantiles = c(0.125,0.875), center = TRUE)  {
     apply(ens, 1, function(x) if(anyNA(x)) return(NA) else quantile(x, probs = quantiles))  
     }
 }
+
+## predwidth(ens, c(0.125, 0.875), TRUE)
+## predwidth(ens, c(0.125, 0.875), FALSE)
+## predwidth(ens, quantiles = c(0.875), TRUE)
+## predwidth(ens, quantiles = c(0.875), FALSE)
+
