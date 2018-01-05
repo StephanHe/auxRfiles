@@ -76,6 +76,10 @@ if(FALSE) {
 }
 
 
+#####################################################################################################
+
+## auxiliary function for hatching significant (grid) points in image plots:
+
 
 
 
