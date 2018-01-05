@@ -15,6 +15,7 @@ if(FALSE) {
 }
 
 ## load libraries:
+library(stats)
 library(dplyr)
 library("ggplot2")
 
