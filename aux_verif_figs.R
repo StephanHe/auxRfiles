@@ -81,5 +81,29 @@ if(FALSE) {
 ## auxiliary function for hatching significant (grid) points in image plots:
 
 
+f_hatch_signif <- function(nsegm, pval_mat, threshold = 0.05)  {
+## nsegm: defines the number of diagnoal lines per grid box, which is 2 * nsegm - 1
+## pval_mat: matrix of p-values
+## threshold: threshold p-value for significances
+  
+  nx <- dim(pval_mat)[1]
+  ny <- dim(pval_mat)[2]
+  
+  startx1 <- rep(1:nx, ny) - 0.5
+  endx1 <- startx1 + 1
+  starty1 <- rep(1:ny, each = nx) - 0.5
+  endy1 <- starty1 + 1
+  
+  ## nsegm <- 6
+  hvec <- seq(0,1, length.out = nsegm)
+  for(ii in 1:nsegm) {
+    ## segments(startx1, starty1, endx1, endy1)
+    segments(startx1 + hvec[ii], starty1, endx1, endy1 - hvec[ii],
+             lwd = c(pval_mat < threshold))
+    segments(startx1, starty1 + hvec[ii], endx1 - hvec[ii], endy1,
+             lwd = c(pval_mat < threshold))
+  }
+}
+
 
 
