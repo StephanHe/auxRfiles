@@ -51,3 +51,31 @@ predwidth <- function(ens, obs, quantiles = c(0.125,0.875), center = TRUE)  {
 ## predwidth(ens, quantiles = c(0.875), TRUE)
 ## predwidth(ens, quantiles = c(0.875), FALSE)
 
+
+## Diebold Mariano test wrapper function
+## --> applies univariate Diebold-Mariano tests to arrays of arbitrary size
+## --> last dimension of the array refers to the realizations
+
+ dm.test.arr <- function(forc, ref) {
+    tdim <- dim(forc)
+    ndim <- length(tdim)
+
+    forc1 <- apply(forc, 1:{ndim-1}, function(x) list(c(x)))
+    ref1 <- apply(ref, 1:{ndim-1}, function(x) list(c(x)))
+    
+    forc2 <- lapply(forc1, function(x) x[[1]])
+    ref2 <- lapply(ref1, function(x) x[[1]])
+    
+    f.dm.test <- function(x,y, alternative, h, power) {
+      if(all(is.na(x)) | all(is.na(y))) return(NA)
+      dm.test(x,y, alternative, h, power)$p.val
+    }
+
+
+    testres <- mapply(function(x,y) f.dm.test(x, y, "two.sided", h = 1, power = 1),
+                    x = forc2, y = ref2)
+    
+    return(array(testres, dim=tdim[-ndim]))
+    
+  }
+
