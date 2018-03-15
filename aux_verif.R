@@ -79,3 +79,34 @@ predwidth <- function(ens, obs, quantiles = c(0.125,0.875), center = TRUE)  {
     
   }
 
+
+## Function that calculates bootstrap ci for the mean score difference when including
+## different number of lags (1; 1,2; 1,2,3; 1,...,n), where 1 are the youngest, and n are the oldest runs
+## of a lagged ensemble
+## ens: matrix of hindcasts
+## obs: reference vectors
+## nlags: number of different initializations/lags to be considered (is 4 for UK Met Office GloSea5)
+
+
+f_veriflagged <- function(ens, obs, nlags, scorefunct) {
+
+  linds <- sapply(seq(1, nmemb, by = nmemb/nlags), function(x) 1:{x+nmemb/nlags-1}, simplify = FALSE)
+  crps <- sapply(linds, function(ii) scorefunct(ens[,ii], obs))
+
+  bs <- function(data, ind) {
+    mean(data[ind,2] - data[ind,1])
+  }
+
+  pairlist <- combn(1:nlags, 2, simplify = FALSE)
+   
+  out <- t(sapply(pairlist, function(ii) {
+    bsres <- boot(data = crps[,ii], statistic = bs, R = 1000)
+    ci <- boot.ci(bsres, conf=0.95, type="basic", index = 1)
+    c(ii, bsres$t0, ci$basic[4:5])
+  }, simplify=TRUE))
+
+  colnames(out) <- c("lag_01", "lag_02", "meandiff", "ci95_low", "ci95_high")
+  out
+}  
+
+
