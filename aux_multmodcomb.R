@@ -9,10 +9,19 @@ library(nor1mix)
 
 f_mat2list <- function(x) lapply(seq_len(ncol(x)), function(jj) x[,jj])
 
+
 f_multmod2 <- function(mu, sigma, probs, weights) {
   if(anyNA(mu)) return(rep(NA, length(probs)))
-  qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights))
+
+  ## handle cases where the standard root method gets stuck
+  out <- try(withTimeout(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights)), timeout = 10,
+                         onTimeout="error"), silent = TRUE)
+  if(class(out) == "try-error") {
+    out <- qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights), method = "eachRoot")
+  }
+  return(out)
 }
+
 
 
 f_multmod <- function(input, weights) {
