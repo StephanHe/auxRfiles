@@ -86,27 +86,53 @@ predwidth <- function(ens, obs, quantiles = c(0.125,0.875), center = TRUE)  {
 ## ens: matrix of hindcasts
 ## obs: reference vectors
 ## nlags: number of different initializations/lags to be considered (is 4 for UK Met Office GloSea5)
+## ref.ind: reference indicices for calculation of the observed climatology
+## prob: vector of quantile levels 
 
 
-f_veriflagged <- function(ens, obs, nlags, scorefunct) {
+f_veriflagged <- function(ens, obs, nlags, scorefunct, ref.ind, prob = NULL) {
 
-  linds <- sapply(seq(1, nmemb, by = nmemb/nlags), function(x) 1:{x+nmemb/nlags-1}, simplify = FALSE)
-  crps <- sapply(linds, function(ii) scorefunct(ens[,ii], obs))
+  out <- list()
+  
+  if(deparse(substitute(scorefunct)) == "EnsCrps") {
+    linds <- sapply(seq(1, nmemb, by = nmemb/nlags), function(x) 1:{x+nmemb/nlags-1}, simplify = FALSE)
+    score <- sapply(linds, function(ii) scorefunct(ens[,ii], obs))
+ } else if(deparse(substitute(scorefunct)) == "EnsRps") {
+   obs_prob <-  f_probforc(matrix(obs, ncol = 1), ref.ind = ref.ind, prob = prob)
+   linds <- sapply(seq(1, nmemb, by = nmemb/nlags), function(x) 1:{x+nmemb/nlags-1}, simplify = FALSE)
+   lforcprobs <- sapply(linds, function(ii) f_probforc(ens[,ii], ref.ind = ref.ind, prob = prob),
+                        simplify = FALSE)
+   score <- sapply(lforcprobs, function(x) scorefunct(x, obs_prob, format = "members"))   
+   } else { stop("no valid scoring function defined") }
 
+
+  out[[1]] <- apply(score, 2, mean)
+  
   bs <- function(data, ind) {
     mean(data[ind,2] - data[ind,1])
   }
 
+  
   pairlist <- combn(1:nlags, 2, simplify = FALSE)
    
-  out <- t(sapply(pairlist, function(ii) {
-    bsres <- boot(data = crps[,ii], statistic = bs, R = 1000)
+  out[[2]] <- t(sapply(pairlist, function(ii) {
+    bsres <- boot(data = score[,ii], statistic = bs, R = 1000)
     ci <- boot.ci(bsres, conf=0.95, type="basic", index = 1)
     c(ii, bsres$t0, ci$basic[4:5])
   }, simplify=TRUE))
 
-  colnames(out) <- c("lag_01", "lag_02", "meandiff", "ci95_low", "ci95_high")
+  colnames(out[[2]]) <- c("lag_01", "lag_02", "meandiff", "ci95_low", "ci95_high")
+  names(out) <- c("meanscores", "BS conf ints")
   out
 }  
 
 
+## auxliary function needed in f_veriflagged
+f_probforc <- function(x, ref.ind, prob) {
+  if(length(dim(x)) == 1) { 
+    convert2prob(x, prob = prob, ref.ind = ref.ind)
+  } else { ## for ensemble forecasts
+    nens <- max(apply(x, 1, function(x) sum(!is.na(x))))
+    count2prob(convert2prob(x[,1:nens], prob = prob, ref.ind = ref.ind), type = 4)
+  }
+}
