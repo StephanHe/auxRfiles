@@ -5,6 +5,7 @@
 #
 ########################################################################################
 
+library(R.utils)
 library(nor1mix)
 
 f_mat2list <- function(x) lapply(seq_len(ncol(x)), function(jj) x[,jj])
@@ -17,7 +18,11 @@ f_multmod2 <- function(mu, sigma, probs, weights) {
   out <- try(withTimeout(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights)), timeout = 10,
                          onTimeout="error"), silent = TRUE)
   if(class(out) == "try-error") {
-    out <- qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights), method = "eachRoot")
+    out <- try(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights), method = "eachRoot"),
+               silent = TRUE)
+    if(class(out) == "try-error") {
+      out <- rep(NA, length(probs))
+    }
   }
   return(out)
 }
@@ -31,6 +36,9 @@ f_multmod <- function(input, weights) {
 
   nyears <- dim(input[[1]])[1]
   minsize <- min(sapply(input, function(x) sum(apply(is.na(x), 2, sum) < nyears)))
+  
+  if(!minsize) return(NA) ## returns NA if minsize is 0, i.e. a ensemble w/o any values
+  
   nmemb <- minsize * length(input) ## ensures that output ensemble is of the same size as the simple multimodel
   
   probs <- {0:(nmemb - 1) + 0.5} / nmemb
