@@ -65,12 +65,13 @@ predwidth <- function(ens, obs, quantiles = c(0.125,0.875), center = TRUE)  {
     
     forc2 <- lapply(forc1, function(x) x[[1]])
     ref2 <- lapply(ref1, function(x) x[[1]])
-    
+       
     f.dm.test <- function(x,y, alternative, h, power) {
       if(all(is.na(x)) | all(is.na(y))) return(NA)
-      dm.test(x,y, alternative, h, power)$p.val
+      outp <- try(dm.test(x,y, alternative, h, power)$p.val, silent=TRUE)
+      if(class(outp) == "try-error") return(NA)
+      return(outp)
     }
-
 
     testres <- mapply(function(x,y) f.dm.test(x, y, "two.sided", h = 1, power = 1),
                     x = forc2, y = ref2)
