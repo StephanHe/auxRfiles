@@ -15,7 +15,7 @@ f_multmod2 <- function(mu, sigma, probs, weights) {
   if(anyNA(mu)) return(rep(NA, length(probs)))
 
   ## handle cases where the standard root method gets stuck
-  out <- try(withTimeout(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights)), timeout = 10,
+  out <- try(withTimeout(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights)), timeout = 1,
                          onTimeout="error"), silent = TRUE)
   if(class(out) == "try-error") {
     out <- try(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights), method = "eachRoot"),
@@ -49,7 +49,7 @@ f_multmod <- function(input, weights) {
   SIGMA1 <- matrix(unlist(sapply(input, function(x) apply(x, 1, sd, na.rm = T),
                                  simplify = FALSE)), ncol = nyears, byrow = TRUE)
 
-  SIGMA1[SIGMA1 == 0] <- 1e-100 ## needed in order to avoid zero variances 
+  SIGMA1[SIGMA1 == 0] <- 3 * .Machine$double.eps ## needed in order to avoid zero variances 
   
   return(t(mapply(f_multmod2, f_mat2list(MU1), f_mat2list(SIGMA1), probslist, f_mat2list(weights))))
   
