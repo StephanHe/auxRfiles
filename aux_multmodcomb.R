@@ -16,12 +16,12 @@ f_multmod2 <- function(mu, sigma, probs, weights) {
 
   
   ## handle cases where the standard root method gets stuck
-  out <- try(withTimeout(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights,
-                                               tol = .Machine$double.eps^0.19)), timeout = 1,
+  out <- try(withTimeout(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights),
+                                               tol = .Machine$double.eps^0.19), timeout = 1,
                          onTimeout="error"), silent = TRUE)
   if(class(out) == "try-error") {
-    out <- try(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights,
-                                     tol = .Machine$double.eps^0.19), method = "eachRoot"),
+    out <- try(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights),
+                                     tol = .Machine$double.eps^0.19, method = "eachRoot"),
                silent = TRUE)
     if(class(out) == "try-error") { 
       out <- rep(NA, length(probs))
@@ -32,7 +32,23 @@ f_multmod2 <- function(mu, sigma, probs, weights) {
 
 
 
-f_multmod <- function(input, weights) {
+f_multmod2_sst <- function(mu, sigma, probs, weights, nn) {
+  ## variant of multmod2 based on resampling that can  handle sst without getting stuck due to
+  ## numerical issues
+  if(anyNA(mu)) return(rep(NA, length(probs)))
+
+  ## nn <- 1e4
+  
+  tsample <- NULL
+  for(mm in 1:length(mu)) {       
+    tsample <- c(tsample, rnorm(round(nn * weights[mm], 0), mean = mu[mm], sd = sigma[mm]))
+  }
+  quantile(tsample, probs = probs)
+}
+
+
+
+f_multmod <- function(input, weights, rsampling = FALSE, nresamp = 1e4) {
   ## input: list of input ensembles matrices
   ## weights: matrix of weights needed for the multimodel combination
 
@@ -54,8 +70,14 @@ f_multmod <- function(input, weights) {
 
 
   SIGMA1[SIGMA1 < 1e-6] <- 1e-6 ## needed in order to avoid zero variances (and as a consequence hanging up f_multmod2)
+  if(rsampling) {   
+    return(t(mapply(f_multmod2_sst, f_mat2list(MU1),
+                    f_mat2list(SIGMA1), probslist, f_mat2list(weights),
+                    MoreArgs=list(nn=nresamp))))
   
-  return(t(mapply(f_multmod2, f_mat2list(MU1), f_mat2list(SIGMA1), probslist, f_mat2list(weights))))
+  } else {
+    return(t(mapply(f_multmod2, f_mat2list(MU1), f_mat2list(SIGMA1), probslist, f_mat2list(weights))))
+  }
   
 }
 
