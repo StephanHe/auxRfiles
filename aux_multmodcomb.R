@@ -14,13 +14,16 @@ f_mat2list <- function(x) lapply(seq_len(ncol(x)), function(jj) x[,jj])
 f_multmod2 <- function(mu, sigma, probs, weights) {
   if(anyNA(mu)) return(rep(NA, length(probs)))
 
+  
   ## handle cases where the standard root method gets stuck
-  out <- try(withTimeout(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights)), timeout = 1,
+  out <- try(withTimeout(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights,
+                                               tol = .Machine$double.eps^0.19)), timeout = 1,
                          onTimeout="error"), silent = TRUE)
   if(class(out) == "try-error") {
-    out <- try(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights), method = "eachRoot"),
+    out <- try(qnorMix(probs, norMix(mu = mu, sigma = sigma, w = weights,
+                                     tol = .Machine$double.eps^0.19), method = "eachRoot"),
                silent = TRUE)
-    if(class(out) == "try-error") {
+    if(class(out) == "try-error") { 
       out <- rep(NA, length(probs))
     }
   }
