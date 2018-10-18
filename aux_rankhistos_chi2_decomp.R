@@ -86,7 +86,7 @@ f_contrasts <- function(nbin, type = NULL) {
 
 
 ## function that performs Chi squared tests for flat rank histograms:
-f_chi2rank <- function(ens = NULL, obs = NULL, tranks = NULL, contrasttypes) {
+f_chi2rank <- function(ens = NULL, obs = NULL, tranks = NULL, nmemb, nbin, contrasttypes) {
   ## needs either pairs of ens and obs or tranks as input
   ## ens: matrix of ensemble forecasts
   ## obs: vector of corresponding observations
@@ -105,9 +105,11 @@ f_chi2rank <- function(ens = NULL, obs = NULL, tranks = NULL, contrasttypes) {
   if(is.null(tranks)) {
     ## map ens to nbin number of bins:
     tranks <- apply(cbind(obs, ens), 1, function(x) rank(x, ties.method = "random")[1])
-  }
+  } 
+  nn <- length(tranks) ## sample size
+  
 
-  probs <- {0:(mm - 1) + 0.5} / mm
+  probs <- {0:(nmemb - 1) + 0.5} / nmemb
   cdf_intervals <- cbind(c(0, probs), c(probs, 1))
 
   cdfvals_at_obs <- sapply(1:nn, function(ii) runif(1, min = cdf_intervals[tranks[ii], 1], max = cdf_intervals[tranks[ii], 2]))
