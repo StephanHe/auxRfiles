@@ -86,11 +86,14 @@ f_contrasts <- function(nbin, type = NULL) {
 
 
 ## function that performs Chi squared tests for flat rank histograms:
-f_chi2rank <- function(ens = NULL, obs = NULL, tranks = NULL, nmemb, nbin, contrasttypes) {
+f_chi2rank <- function(ens = NULL, obs = NULL, tranks = NULL, nmemb, nbin, contrasttypes,
+                       uvals = FALSE) {
   ## needs either pairs of ens and obs or tranks as input
   ## ens: matrix of ensemble forecasts
   ## obs: vector of corresponding observations
   ## tranks: vector of ranks of the observations
+  ## uvals: if set to TRUE, the u values for the contrasts are returned, from wich the
+  ## "direction" of the bias or dispersion error can be deduced. Defaults to FALSE.
 
   ## set extra random seed for function in order to ensure reproducability
   old <- try(.Random.seed, silent = TRUE)
@@ -137,18 +140,26 @@ f_chi2rank <- function(ens = NULL, obs = NULL, tranks = NULL, nmemb, nbin, contr
   ## sum((obsperbin - expect_obsperbin)^2/expect_obsperbin) ## check if this is equal to T_full --> seems to be OK
 
   ## 1st contrast:
-  (T_1 <- sum(f_contrasts(nbin, type = contrasttypes[1]) * x_vec)^2)
+  U_1 <- sum(f_contrasts(nbin, type = contrasttypes[1]) * x_vec)
+  (T_1 <- U_1^2)
   pvals[2] <- 1 - pchisq(T_1, df = 1)
 
 
   ## 2nd contrast:
-  (T_2 <- sum(f_contrasts(nbin, type = contrasttypes[2]) * x_vec)^2)
+  U_2 <- sum(f_contrasts(nbin, type = contrasttypes[2]) * x_vec)
+  (T_2 <- U_2^2)
   pvals[3] <- 1 - pchisq(T_2, df = 1)
 
   
   T_resid <- T_full - T_1 - T_2
   pvals[4] <-  1 - pchisq(T_resid, df = nbin - 3)
 
-  return(pvals)
+  if(uvals) {
+    u <- c(NA, U_1, U_2, NA)
+    return(list(u, pvals))
+    
+  } else {
+    return(pvals)
+  }
   
 } ## end of f_chi2rank
